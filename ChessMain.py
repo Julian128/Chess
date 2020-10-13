@@ -39,16 +39,21 @@ def main():
                 running = False
             elif i.type == pyg.MOUSEBUTTONDOWN:
                 location = pyg.mouse.get_pos()  # x, y location of mouse
-                col = location[0] // sq_size
-                row = location[1] // sq_size
+                col = int(location[0] // sq_size)
+                row = int(location[1] // sq_size)
                 if sqSelected == (row, col):
                     sqSelected == ()  # unselect square
+                    playerClicks = []
                 else:
                     sqSelected = (row, col)
                     playerClicks.append(sqSelected)
 
                 if len(playerClicks) == 2:
-
+                    move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
+                    print(move.getChessNotation())
+                    gs.makeMove(move)
+                    sqSelected = ()
+                    playerClicks = []
 
 
 
