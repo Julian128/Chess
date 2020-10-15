@@ -26,18 +26,31 @@ def main():
     screen.fill(pyg.Color("white"))
 
     gs = ChessEngine.GameState()
+    validMoves = gs.getValidMoves()
+    moveMade = False  # flag variable for when a move is made
+
     loadImages()
 
     running = True
 
     sqSelected = ()  # tuple keeping track of last square clicked
-    playerClicks = []  # track two clicks
+    playerClicks = []  # track two mouse clicks
 
     while running:
         for i in pyg.event.get():
-            if i.type == pyg.QUIT:
+            if i.type == pyg.QUIT:  # keyboard clicks
                 running = False
-            elif i.type == pyg.MOUSEBUTTONDOWN:
+            elif i.type == pyg.KEYDOWN:
+                if i.key == pyg.K_LEFT:
+                    gs.undoMove()
+                    moveMade = True
+                    print("undo")
+                    print("undo")
+                if i.key == pyg.K_RIGHT:
+                    gs.redoMove()
+                    print("redo")
+
+            elif i.type == pyg.MOUSEBUTTONDOWN:  # mouse clicks
                 location = pyg.mouse.get_pos()  # x, y location of mouse
                 col = int(location[0] // sq_size)
                 row = int(location[1] // sq_size)
@@ -51,11 +64,20 @@ def main():
                 if len(playerClicks) == 2:
                     move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
                     print(move.getChessNotation())
-                    gs.makeMove(move)
-                    sqSelected = ()
-                    playerClicks = []
 
+                    if move in validMoves:
+                        gs.makeMove(move)
+                        moveMade = True
+                        sqSelected = ()
+                        playerClicks = []
+                    else:  # fixes double click bug
+                        playerClicks = [sqSelected]
 
+    
+
+        if moveMade:
+            validMoves = gs.getValidMoves()
+            moveMade = False
 
         drawGameState(screen, gs)
         clock.tick(maxFPS)
