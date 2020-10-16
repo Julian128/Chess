@@ -45,10 +45,9 @@ def main():
                     gs.undoMove()
                     moveMade = True
                     print("undo")
-                    print("undo")
-                if i.key == pyg.K_RIGHT:
-                    gs.redoMove()
-                    print("redo")
+                #if i.key == pyg.K_RIGHT:
+                    #gs.redoMove()
+                    #print("redo")
 
             elif i.type == pyg.MOUSEBUTTONDOWN:  # mouse clicks
                 location = pyg.mouse.get_pos()  # x, y location of mouse
