@@ -8,7 +8,7 @@ width = height = 1024
 dimensions = 8
 sq_size = height / dimensions
 maxFPS = 60
-images = {}  # initializes a set, an unordered colletion with no dupilcate elements
+images = {}  # initializes a set, an unordered collection with no dupilcate elements
 
 
 #Initialize global dict of images, called once
@@ -62,10 +62,12 @@ def main():
 
                 if len(playerClicks) == 2:
                     move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
-                    print(move.getChessNotation())
 
                     if move in validMoves:
+
+                        print(move.getChessNotation())
                         gs.makeMove(move)
+                        print(str(move.isEnpassantMove))
                         moveMade = True
                         sqSelected = ()
                         playerClicks = []
