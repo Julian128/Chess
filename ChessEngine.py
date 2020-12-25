@@ -1,4 +1,5 @@
-
+import lichess.api
+import random
 
 class GameState():
     def __init__(self):  # board is 8x8 2D list, b = black, w = white
@@ -28,13 +29,15 @@ class GameState():
         self.whiteKingLocation = (7, 4)
         self.blackKingLocation = (0, 4)
         #self.undoneMove = ()
-
+        self.nodes = 0 
         #self.inCheck = False
         #self.pins = []
         #self.checks = []
 
 
     def makeMove(self, move):
+
+        self.nodes += 1
 
         self.board[move.startRow][move.startCol] = "--"
         self.board[move.endRow][move.endCol] = move.pieceMoved
@@ -108,7 +111,9 @@ class GameState():
                 else:  # queenside
                     self.board[move.endRow][move.endCol-2] = self.board[move.endRow][move.endCol+1]
                     self.board[move.endRow][move.endCol+1] = "--"
-
+            
+            self.checkMate = False
+            self.staleMate = False
 
     def getValidMoves(self):
 
@@ -127,6 +132,7 @@ class GameState():
             self.undoMove()
 
             if len(moves) == 0:  # either checkmate or stalemate
+
                 if self.inCheck:
                     self.checkMate = True
                 else:
@@ -351,12 +357,203 @@ class GameState():
                 moves.append(Move((r, c), (r, c-2), self.board))
 
 
+
+
+    def evaluation(self, whitesMove):
+
+        piecesToValues = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
+
+        eval = 0
+        correction = 0
+
+        for row in self.board:
+            for piece in row:
+                if piece[0] == "w":
+                    eval += piecesToValues[piece[1]]
+
+
+                elif piece[0] == "b":
+                    eval -= piecesToValues[piece[1]]
+        
+
+        if self.checkMate:
+            correction += 1000
+        if self.staleMate:
+            correction += 0
+        if self.inCheck():
+            correction += 1
+
+        if whitesMove:  # called in future moves
+            eval += correction
+        else:
+            eval -= correction
+
+        return eval
+
+
+
+    def computerMoveRandom(self):
+
+        moves = self.getValidMoves()
+
+        move = random.choice(moves)
+        self.makeMove(move)
+
+        return move
+
+    def computerMove(self):
+
+        evals = []
+        moves = self.getValidMoves()
+        bestMoves = []
+
+        for move in moves:
+
+            self.makeMove(move)
+            self.getValidMoves()  # detect mate
+            evals.append(self.evaluation(not self.whiteToMove))  # after one move
+        
+            self.undoMove()
+
+
+        if self.whiteToMove:
+            best = [i for i, x in enumerate(evals) if x == max(evals)]
+            for j in best:
+                bestMoves.append(moves[j])
+        else:
+            best = [i for i, x in enumerate(evals) if x == min(evals)]
+            for j in best:
+                bestMoves.append(moves[j])        
+
+
+        move = random.choice(bestMoves)  # take random choice of moves with same evaluation
+        self.makeMove(move)
+
+        return move
+
+
+    def computerMovePro(self):
+                
+        evals = []
+        moves1 = self.getValidMoves()
+        bestMoves = []
+
+        for move1 in moves1:
+
+            evals2 = []
+            self.makeMove(move1)
+            moves2 = self.getValidMoves()
+
+            eval1 = self.evaluation(not self.whiteToMove)
+
+            if eval1 > 100:  # break after finding mate in 1
+
+                return move1
+
+            for move2 in moves2:
+
+                self.makeMove(move2)
+                moves3 = self.getValidMoves()
+
+                eval2 = self.evaluation(self.whiteToMove)
+                evals2.append(eval2)
+                self.undoMove()
+
+            self.undoMove()
+            evals.append(evals2)
+
+
+        if self.whiteToMove:
+            print("white")
+
+            mins = []
+            for eval2 in evals :
+                mini = min(eval2)
+                mins.append(mini)
+                print(mini)
+            best = [i for i, x in enumerate(mins) if x == max(mins)]
+
+            for i in best:
+                bestMoves.append(moves1[i])
+
+        move = random.choice(bestMoves)
+        self.makeMove(move)
+        return move
+
+
+    def computerMoveDUMB(self):
+
+        evals1 = []
+        moves = self.getValidMoves()
+        bestMoves = []
+
+        for move in moves:
+
+            self.makeMove(move)
+            eval1 = self.evaluation(not self.whiteToMove)
+            evals1.append(evals1)
+            
+            if eval1 > 100:  # break after finding mate in 1
+                break
+
+            evals2 = []
+            moves2 = self.getValidMoves()
+            
+            for move2 in moves2:
+
+                self.makeMove(move2)
+                evals3 = []
+                moves3 = self.getValidMoves()
+                
+                for move3 in moves3:
+
+                    evals3.append(self.evaluation(not self.whiteToMove))
+
+
+                evals2.append(evals3)   
+                self.undoMove()
+
+
+            evals1.append(evals2)
+            self.undoMove()
+
+
+        if self.whiteToMove:
+            mins = []
+            for eval2 in evals1:
+                maxs = []
+                for eval3 in eval2:
+                    maxs.append(max(eval3))
+                mins.append(maxs)
+            best = [i for i, x in enumerate(mins) if x == max(mins)]
+            for j in best:
+                bestMoves.append(moves[j])
+        else:
+            mins = []
+            for eval2 in evals1:
+                mins2 = []
+                for eval3 in eval2:
+                    mins2.append(min(eval3))
+            mins = [i for i, x in enumerate(mins2) if x == min(mins2)]
+            best = [i for i, x in enumerate(mins) if x == min(mins)]
+            for j in best:
+                bestMoves.append(moves[j])      
+
+
+
+        move = random.choice(bestMoves)  # take random choice of moves with same evaluation
+        self.makeMove(move)
+        return move
+
+
+
 class CastleRights():
     def __init__(self, wks, bks, wqs, bqs):
         self.wks = wks
         self.bks = bks
         self.wqs = wqs
         self.bqs = bqs
+
 
 
 

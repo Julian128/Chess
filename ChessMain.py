@@ -1,7 +1,10 @@
 
-
+import lichess.api
+from lichess.format import SINGLE_PGN
+import time
 import pygame as pyg
 import ChessEngine
+import random
 
 
 width = height = 1024
@@ -20,6 +23,14 @@ def loadImages():
 
 
 def main():
+
+    #user = lichess.api.user('Julik137')
+    #print(user['perfs']['blitz']['rating'])
+    #pgn = lichess.api.user_games('Julik137', max=1, format=SINGLE_PGN)
+    #pgn = lichess.api.game('Qa7FJNk2', format=PGN)
+    #print(pgn)
+
+
     pyg.init()
     screen = pyg.display.set_mode((width, height))
     clock = pyg.time.Clock()
@@ -49,6 +60,42 @@ def main():
                     #gs.redoMove()
                     #print("redo")
 
+
+                # COMPUTER MOVES
+                if i.key == pyg.K_e:
+                    for i in range(0, 100):
+                        if len(validMoves) > 0:
+
+                            gs.nodes = 0
+                            start = time.time()
+
+                            if gs.whiteToMove:
+                                move = gs.computerMovePro()
+                            else:
+                                move = gs.computerMove()
+
+                            print(move.getChessNotation())
+                            done = time.time()
+
+                            print("nodes/s: " + str(round((gs.nodes / (done - start)))))
+
+                            moveMade = True
+                            #print(gs.evaluation())
+                                
+                            if moveMade:
+                                validMoves = gs.getValidMoves()  # detects checkmate, stalemate
+                                if gs.checkMate:
+                                    print("MATE")
+                                moveMade = False
+
+
+
+                            drawGameState(screen, gs)
+                            clock.tick(maxFPS)
+                            pyg.display.flip()
+
+
+
             elif i.type == pyg.MOUSEBUTTONDOWN:  # mouse clicks
                 location = pyg.mouse.get_pos()  # x, y location of mouse
                 col = int(location[0] // sq_size)
@@ -67,18 +114,22 @@ def main():
 
                         print(move.getChessNotation())
                         gs.makeMove(move)
-                        print(str(move.isEnpassantMove))
                         moveMade = True
                         sqSelected = ()
                         playerClicks = []
                     else:  # fixes double click bug
                         playerClicks = [sqSelected]
 
-    
 
+    
+                            
         if moveMade:
-            validMoves = gs.getValidMoves()
+            validMoves = gs.getValidMoves()  # detects checkmate, stalemate
+            if gs.checkMate:
+                print("MATE")
             moveMade = False
+
+
 
         drawGameState(screen, gs)
         clock.tick(maxFPS)
