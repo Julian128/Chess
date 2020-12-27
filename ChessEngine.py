@@ -1,5 +1,7 @@
 import lichess.api
 import random
+from multiprocessing import Process, Queue, Pool
+
 
 class GameState():
     def __init__(self):  # board is 8x8 2D list, b = black, w = white
@@ -29,15 +31,13 @@ class GameState():
         self.whiteKingLocation = (7, 4)
         self.blackKingLocation = (0, 4)
         #self.undoneMove = ()
-        self.nodes = 0 
+        self.nodes = 0
         #self.inCheck = False
         #self.pins = []
         #self.checks = []
 
 
     def makeMove(self, move):
-
-        self.nodes += 1
 
         self.board[move.startRow][move.startCol] = "--"
         self.board[move.endRow][move.endCol] = move.pieceMoved
@@ -361,33 +361,112 @@ class GameState():
 
     def evaluation(self, whitesMove):
 
-        piecesToValues = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
+
+        pawnValue = [
+            [9, 9, 9, 9, 9, 9, 9, 9],
+            [4, 4, 4, 4, 4, 4, 4, 4],
+            [3.5, 3, 3, 3, 3, 3, 3, 2.5],
+            [1.5, 1.7, 1.8, 2, 2, 1.8, 1.7, 1.5],
+            [1.1, 1.2, 1.3, 1.4, 1.4, 1.3, 1.2, 1.1],
+            [1, 1.2, 1.3, 1.3, 1.3, 1.3, 1.2, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0]
+            ]
+        knightValue = [
+            [2, 2.8, 3.1, 3.1, 3.1, 3.1, 2.8, 2],
+            [2.3, 2.8, 3.4, 3.4, 3.4, 3.4, 2.8, 2.3],
+            [2.3, 2.8, 3.4, 3.4, 3.4, 3.4, 2.8, 2.3],
+            [2.3, 2.8, 3.1, 3.1, 3.1, 3.1, 2.8, 2.3],
+            [2.3, 2.8, 3.1, 3.1, 3.1, 3.1, 2.8, 2.3],
+            [2.3, 2.8, 3.1, 3.1, 3.1, 3.1, 2.8, 2.3],
+            [2.3, 2.8, 3.1, 3.1, 3.1, 3.1, 2.8, 2.3],
+            [2.3, 2.8, 2.8, 2.8, 2.8, 2.8, 2.8, 2.3]
+            ]
+        bishopValue = [
+            [3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5],
+            [3.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 3.5],
+            [3.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 3.5],
+            [3.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 3.5],
+            [3.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 3.5],
+            [3.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 3.5],
+            [3.5, 4.5, 4.5, 4.5, 4.5, 4.5, 4.5, 3.5],
+            [3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 3.5]
+            ]
+        rookValue = [
+            [5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5],
+            [5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5, 5.5],
+            [5, 5, 5, 5, 5, 5, 5, 5],
+            [5, 5, 5, 5, 5, 5, 5, 5],
+            [5, 5, 5, 5, 5, 5, 5, 5],
+            [5, 5, 5, 5, 5, 5, 5, 5],
+            [5, 5, 5, 5, 5, 5, 5, 5],
+            [5, 5, 5, 5, 5, 5, 5, 5]
+            ]
+        queenValue = [
+            [7, 7, 7, 7, 7, 7, 7, 7],
+            [7, 8, 8, 8, 8, 8, 8, 7],
+            [7, 8, 9, 9, 9, 9, 8, 7],
+            [7, 8, 9, 9.5, 9.5, 9, 8, 7],
+            [7, 8, 9, 9.5, 9.5, 9, 8, 7],
+            [7, 8, 8, 8, 8, 8, 8, 7],
+            [7, 8, 8, 8, 8, 8, 8, 7],
+            [7, 7, 7, 7, 7, 7, 7, 7]
+            ]
+        kingValue = [
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1.2, 1.2, 1, 1, 1, 1.2, 1]
+            ]
+
+        piecesToValues = {"P": pawnValue, "N": knightValue, "B": bishopValue, "R": rookValue, "Q": queenValue, "K": kingValue}
+        #piecesToValuess = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
 
         eval = 0
         correction = 0
-
+        rowN = 0
         for row in self.board:
+
+            pieceN = 0
             for piece in row:
                 if piece[0] == "w":
-                    eval += piecesToValues[piece[1]]
+                    eval += piecesToValues[piece[1]][rowN][pieceN]
+                    #eval += piecesToValuess[piece[1]]
 
 
                 elif piece[0] == "b":
-                    eval -= piecesToValues[piece[1]]
-        
+                    eval -= piecesToValues[piece[1]][7 - rowN][7 - pieceN]
+                    #eval -= piecesToValuess[piece[1]]
+
+                pieceN += 1
+
+            rowN += 1
 
         if self.checkMate:
             correction += 1000
         if self.staleMate:
-            correction += 0
+            if eval > 0:
+                correction -= 5
+            else:
+                correction += 5
         if self.inCheck():
             correction += 1
-
         if whitesMove:  # called in future moves
             eval += correction
+            if self.staleMate and eval > 0:
+                eval -= 5
+            else:
+                eval += 0
         else:
             eval -= correction
-
+            if self.staleMate and eval < 0:
+                eval += 5
+            else:
+                eval -= 0
         return eval
 
 
@@ -401,7 +480,7 @@ class GameState():
 
         return move
 
-    def computerMove(self):
+    def computerMove(self):  # one move ahead
 
         evals = []
         moves = self.getValidMoves()
@@ -432,118 +511,138 @@ class GameState():
         return move
 
 
-    def computerMovePro(self):
-                
+    def getEvaluation(self, move):
+
         evals = []
+        self.makeMove(move)
+        moves = self.getValidMoves()
+
+        for move in moves:
+            self.nodes += 1
+            self.makeMove(move)
+            movesFut = self.getValidMoves()
+
+            eval = self.evaluation(self.whiteToMove)
+            evals.append(eval)
+            self.undoMove()
+
+        self.undoMove()
+        #print(self.nodes)
+ 
+        return evals
+
+    def computerMovePro(self):  # two moves ahead
+ 
+        evals = []
+        evals1 = []
         moves1 = self.getValidMoves()
+
+        for move in moves1:
+            evals1.append(self.evaluation(self.whiteToMove))
+
         bestMoves = []
 
-        for move1 in moves1:
-
-            evals2 = []
-            self.makeMove(move1)
-            moves2 = self.getValidMoves()
-
-            eval1 = self.evaluation(not self.whiteToMove)
-
-            if eval1 > 100:  # break after finding mate in 1
-
-                return move1
-
-            for move2 in moves2:
-
-                self.makeMove(move2)
-                moves3 = self.getValidMoves()
-
-                eval2 = self.evaluation(self.whiteToMove)
-                evals2.append(eval2)
-                self.undoMove()
-
-            self.undoMove()
-            evals.append(evals2)
-
+        pool = Pool(processes = len(moves1), maxtasksperchild = 1000)
+        evals = pool.map(self.getEvaluation, moves1)
 
         if self.whiteToMove:
-            print("white")
-
             mins = []
             for eval2 in evals :
                 mini = min(eval2)
                 mins.append(mini)
-                print(mini)
             best = [i for i, x in enumerate(mins) if x == max(mins)]
 
             for i in best:
                 bestMoves.append(moves1[i])
+
+
+        else:
+            maxs = []
+            if len(evals) > 0:
+                for eval2 in evals :
+                    if len(eval2) > 0:
+                        maxi = max(eval2)
+                        maxs.append(maxi)
+                    else:
+                        maxs.append(100)
+                best = [i for i, x in enumerate(maxs) if x == min(maxs)]
+
+                for i in best:
+                    bestMoves.append(moves1[i])
+            else:
+                best = [i for i, x in enumerate(evals1) if x == max(evals1)]
+                move = moves1[best]
+
+
+        pool.terminate()
 
         move = random.choice(bestMoves)
         self.makeMove(move)
         return move
 
 
-    def computerMoveDUMB(self):
 
-        evals1 = []
+
+    def notationTransform(self, moveIn):
         moves = self.getValidMoves()
-        bestMoves = []
+        possibleMoves = []
+        finalMoves = []
+        ranksToRows = {"1": 7, "2": 6, "3": 5, "4": 4, "5": 3, "6": 2, "7": 1, "8": 0}
+        rowsToRanks = {i: j for j, i in ranksToRows.items()}
+
+        filesToCols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
+        colsToFiles = {i: j for j, i in filesToCols.items()}
+
+        if moveIn == "O-O":
+            return Move([7, 4], [7, 6], self.board)
+        elif moveIn == "O--O":
+            return Move([7, 4], [7, 2], self.board)
+
+        moveIn = moveIn.replace("x", "")
+        moveIn = moveIn.replace("+", "")
+        moveIn = moveIn.replace("#", "")
+
+        pieceMoved = moveIn[0]
+        moveIn = moveIn[:-2] + str(ranksToRows[moveIn[-1]]) + str(filesToCols[moveIn[-2]])
+
+
+
+        list = ["a", "b", "c", "d", "e", "f", "g", "h"]
+        for c in list:
+            if moveIn[0] == c:
+                moveIn = moveIn[1:]
+
 
         for move in moves:
 
-            self.makeMove(move)
-            eval1 = self.evaluation(not self.whiteToMove)
-            evals1.append(evals1)
-            
-            if eval1 > 100:  # break after finding mate in 1
-                break
+            if str(move.endRow) == moveIn[-2] and str(move.endCol) == moveIn[-1]:
+                possibleMoves.append(move)
 
-            evals2 = []
-            moves2 = self.getValidMoves()
-            
-            for move2 in moves2:
+        if len(moveIn) == 2:
+            moveIn = "P" + moveIn
 
-                self.makeMove(move2)
-                evals3 = []
-                moves3 = self.getValidMoves()
-                
-                for move3 in moves3:
+        #print(moveIn)
+        for move in possibleMoves:
+            #print("possible Move with piece: " + move.pieceMoved + "\n")
 
-                    evals3.append(self.evaluation(not self.whiteToMove))
+            if moveIn[0] == move.pieceMoved[1]:
+                finalMoves.append(move)
 
+#print("removed: " + move.pieceMoved + "\n")
 
-                evals2.append(evals3)   
-                self.undoMove()
+        if len(finalMoves) > 1:
+            print("multiple moves available")
+            for move in finalMoves:
+                if moveIn[1] != colsToFiles[move.startCol] and moveIn[1] != rowsToRanks[move.startRow]:
+                    print(moveIn)
+                    print(colsToFiles[move.startCol], rowsToRanks[move.startRow])
+                    finalMoves.remove(move)
+                    print("removed: " + move.getChessNotation())
+        if len(finalMoves) > 1:
+            print("error")
+        #print("piece moved: " + finalMoves[0].pieceMoved + "\n")
+        return(finalMoves[0])
 
-
-            evals1.append(evals2)
-            self.undoMove()
-
-
-        if self.whiteToMove:
-            mins = []
-            for eval2 in evals1:
-                maxs = []
-                for eval3 in eval2:
-                    maxs.append(max(eval3))
-                mins.append(maxs)
-            best = [i for i, x in enumerate(mins) if x == max(mins)]
-            for j in best:
-                bestMoves.append(moves[j])
-        else:
-            mins = []
-            for eval2 in evals1:
-                mins2 = []
-                for eval3 in eval2:
-                    mins2.append(min(eval3))
-            mins = [i for i, x in enumerate(mins2) if x == min(mins2)]
-            best = [i for i, x in enumerate(mins) if x == min(mins)]
-            for j in best:
-                bestMoves.append(moves[j])      
-
-
-
-        move = random.choice(bestMoves)  # take random choice of moves with same evaluation
-        self.makeMove(move)
-        return move
 
 
 

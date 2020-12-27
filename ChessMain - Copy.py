@@ -7,31 +7,7 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame as pyg
 import ChessEngine
 import random
-import berserk
-import threading
 
-
-
-class Game(threading.Thread):
-    def __init__(self, client, game_id, **kwargs):
-        super().__init__(**kwargs)
-        self.game_id = game_id
-        self.client = client
-        self.stream = client.bots.stream_game_state(game_id)
-        self.current_state = next(self.stream)
-
-    def run(self):
-        for event in self.stream:
-            if event['type'] == 'gameState':
-                self.handle_state_change(event)
-            elif event['type'] == 'chatLine':
-                self.handle_chat_line(event)
-
-    def handle_state_change(self, game_state):
-        pass
-
-    def handle_chat_line(self, chat_line):
-        pass
 
 
 width = height = 1024
@@ -50,94 +26,12 @@ def loadImages():
 
 
 def main():
-    token = "lMysRaNxd9sNQkXj"
-    session = berserk.TokenSession(token)
-    client = berserk.Client(session)
 
-    in_game = False
-    while(not in_game):
-
-        time.sleep(0.5)
-        for event in client.bots.stream_incoming_events():
-            if event['type'] == 'gameStart':
-                game_id = event['game']['id']
-                in_game = True
-                break
-            elif event['type'] == 'challenge':
-                game_id = event['challenge']['id']
-                client.bots.accept_challenge(game_id)
-                client.bots.post_message(game_id, "glhf")
-                in_game = True
-    print("The game has started!")
-
-    gs = ChessEngine.GameState()
-    moveMade = False  # flag variable for when a move is made
-    while(in_game):
-        movecount = 0
-        state = client.games.export(game_id)
-        move = state["moves"]
-
-        if(gs.whiteToMove):  # importing enemy move
-
-
-
-            move = ""
-            last_move = ""
-
-            state = client.games.export(game_id)
-            moves = state["moves"]
-
-            move = moves.split()
-            time.sleep(1)
-            
-            if len(move) % 2 == 1:
-                start = time.time()
-
-                #gs.nodes = 0
-                #print(move[-1])
-                
-                moveE = gs.notationTransform(move[-1])  # enemy move
-                print(moveE.getChessNotation())
-                move = gs.makeMove(moveE)
-                #for i in range(0, len(gs.board)):
-                    ##print(str(gs.board[i]) + "\n")
-                movecount += 1
-                done = time.time()
-                #print("nodes/s: " + str(round((gs.nodes / (done - start)))))
-
-                moveMade = True
-                if moveMade:
-                    validMoves = gs.getValidMoves()  # detects checkmate, stalemate
-                    if gs.checkMate:
-                        client.bots.post_message(game_id, "gg")
-                        print("MATE")
-                    moveMade = False
-
-
-        if(not gs.whiteToMove):  # bot playing a move
-
-            validMoves = gs.getValidMoves()
-            if len(validMoves) > 0:
-
-                start = time.time()
-                #gs.nodes = 0
-                move = gs.computerMovePro()
-                print(str(move.getChessNotation()))
-            
-                client.bots.make_move(game_id, str(move.getChessNotation()))
-                #for i in range(0, len(gs.board)):
-                #    print(str(gs.board[i]) + "\n")
-                done = time.time()
-                #print("nodes/s: " + str(round((gs.nodes / (done - start)))))
-                print(round(gs.evaluation(gs.whiteToMove), 2))
-                moveMade = True
-                if moveMade:
-                    validMoves = gs.getValidMoves()  # detects checkmate, stalemate
-                    if gs.checkMate:
-                        print("MATE")
-                    moveMade = False
-
-
+    #user = lichess.api.user('Julik137')
+    #print(user['perfs']['blitz']['rating'])
+    #pgn = lichess.api.user_games('Julik137', max=1, format=SINGLE_PGN)
+    #pgn = lichess.api.game('Qa7FJNk2', format=PGN)
+    #print(pgn)
 
 
     pyg.init()
@@ -168,9 +62,11 @@ def main():
                     start = time.time()
                     #gs.nodes = 0
                     move = gs.computerMovePro()
+                    print(round(gs.evaluation(gs.whiteToMove), 2))
+
                     print(move.getChessNotation())
                     done = time.time()
-                    print("nodes/s: " + str(round((gs.nodes / (done - start)))))
+                    #print("nodes/s: " + str(round((gs.nodes / (done - start)))))
 
                     moveMade = True
                     if moveMade:
@@ -283,10 +179,6 @@ def drawPieces(screen, board):
 
             if piece != "--":  # not empty square
                 screen.blit(images[piece], pyg.Rect(j * sq_size, i * sq_size, sq_size, sq_size))
-
-
-
-
 
 
 

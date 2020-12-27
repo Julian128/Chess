@@ -21,6 +21,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ChessMain - Copy.py" />
     <Compile Include="ChessMain.py" />
     <Compile Include="ChessEngine.py">
       <SubType>Code</SubType>
