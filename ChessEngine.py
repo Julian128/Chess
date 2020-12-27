@@ -115,7 +115,7 @@ class GameState():
             self.checkMate = False
             self.staleMate = False
 
-    def getValidMoves(self):
+    def getValidMoves(self, whitesMove):
 
 
         tempEnpassantPossible = self.enpassantPossible
@@ -128,6 +128,10 @@ class GameState():
             self.whiteToMove = not self.whiteToMove
             if self.inCheck():
                 moves.remove(moves[i])
+            else:
+                moves[i].evaluation = self.evaluation(whitesMove)
+
+
             self.whiteToMove = not self.whiteToMove
             self.undoMove()
 
@@ -145,6 +149,8 @@ class GameState():
 
         self.enpassantPossible = tempEnpassantPossible
         self.currentCastlingRight = tempCastleRights
+
+
         return moves
 
 
@@ -454,19 +460,15 @@ class GameState():
             else:
                 correction += 5
         if self.inCheck():
-            correction += 1
+            correction += 2
         if whitesMove:  # called in future moves
             eval += correction
             if self.staleMate and eval > 0:
                 eval -= 5
-            else:
-                eval += 0
         else:
             eval -= correction
             if self.staleMate and eval < 0:
                 eval += 5
-            else:
-                eval -= 0
         return eval
 
 
@@ -533,19 +535,68 @@ class GameState():
 
     def computerMovePro(self):  # two moves ahead
  
+       
+        moves1 = self.getValidMoves(self.whiteToMove)
+        bestMoves = []
+        eval1 = []
         evals = []
-        evals1 = []
-        moves1 = self.getValidMoves()
+        for move in moves1:
+
+            if move.evaluation < -100:
+                print("possible mate")
+                self.makeMove(move)
+                return move
+            eval1.append(move.evaluation)
+
+        #pool = Pool(processes = len(moves1), maxtasksperchild = 1000)
 
         for move in moves1:
-            evals1.append(self.evaluation(self.whiteToMove))
+            self.makeMove(move)
+            evals2 = []
+            moves2 = self.getValidMoves(not self.whiteToMove)
+            for move2 in moves2:
+                evals2.append(move2.evaluation)
+            evals.append(evals2)
+            self.undoMove()
 
-        bestMoves = []
 
-        pool = Pool(processes = len(moves1), maxtasksperchild = 1000)
-        evals = pool.map(self.getEvaluation, moves1)
+        #max_move_index = 0
+        #max_move = moves[0].evaluation
+
+        #for index, instance in enumerate(moves2):
+            #if instance.evaluation > max_move:
+               # max_move = instance.value
+               # max_move_index = index
+
+        
+
+
+        maxs = []
+        if len(evals) > 0:
+            for eval2 in evals :
+                if len(eval2) > 0:
+                    maxi = max(eval2)
+                    maxs.append(maxi)
+                else:
+                    maxs.append(100)
+            #print(maxs)
+            best = [i for i, x in enumerate(maxs) if x == min(maxs)]
+
+
+            for i in best:
+                bestMoves.append(moves1[i])
+
+
+        move = random.choice(bestMoves)
+        self.makeMove(move)
+        return move
+
+
 
         if self.whiteToMove:
+
+
+
             mins = []
             for eval2 in evals :
                 mini = min(eval2)
@@ -584,7 +635,7 @@ class GameState():
 
 
     def notationTransform(self, moveIn):
-        moves = self.getValidMoves()
+        moves = self.getValidMoves(self.whiteToMove)
         possibleMoves = []
         finalMoves = []
         ranksToRows = {"1": 7, "2": 6, "3": 5, "4": 4, "5": 3, "6": 2, "7": 1, "8": 0}
@@ -634,7 +685,7 @@ class GameState():
             print("multiple moves available")
             for move in finalMoves:
                 if moveIn[1] != colsToFiles[move.startCol] and moveIn[1] != rowsToRanks[move.startRow]:
-                    print(moveIn)
+                    #print(moveIn)
                     print(colsToFiles[move.startCol], rowsToRanks[move.startRow])
                     finalMoves.remove(move)
                     print("removed: " + move.getChessNotation())
@@ -678,7 +729,7 @@ class Move():
         self.startCol = startSq[1]
         self.endRow = endSq[0]
         self.endCol = endSq[1]
-
+        self.evaluation = 0
         self.pieceMoved = board[self.startRow][self.startCol]
         self.pieceCaptured = board[self.endRow][self.endCol]
         self.moveID = self.startRow * 1000, self.startCol * 100 + self.endRow * 10 + self.endCol  # unique moveID for every possible move in a boardstate

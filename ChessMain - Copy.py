@@ -40,7 +40,7 @@ def main():
     screen.fill(pyg.Color("white"))
 
     gs = ChessEngine.GameState()
-    validMoves = gs.getValidMoves()
+    validMoves = gs.getValidMoves(gs.whiteToMove)
     moveMade = False  # flag variable for when a move is made
 
     loadImages()
@@ -70,7 +70,7 @@ def main():
 
                     moveMade = True
                     if moveMade:
-                        validMoves = gs.getValidMoves()  # detects checkmate, stalemate
+                        validMoves = gs.getValidMoves(gs.whiteToMove)  # detects checkmate, stalemate
                         if gs.checkMate:
                             print("MATE")
                         moveMade = False
@@ -145,7 +145,7 @@ def main():
     
                             
         if moveMade:
-            validMoves = gs.getValidMoves()  # detects checkmate, stalemate
+            validMoves = gs.getValidMoves(gs.whiteToMove)  # detects checkmate, stalemate
             if gs.checkMate:
                 print("MATE")
             moveMade = False
