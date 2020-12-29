@@ -107,7 +107,7 @@ def main():
 
                 moveMade = True
                 if moveMade:
-                    validMoves = gs.getValidMoves(gs.whiteToMove)  # detects checkmate, stalemate
+                    validMoves = gs.getValidMoves(gs.whiteToMove, False)  # detects checkmate, stalemate
                     if gs.checkMate:
                         client.bots.post_message(game_id, "gg")
                         print("MATE")
@@ -116,7 +116,7 @@ def main():
 
         if(not gs.whiteToMove):  # bot playing a move
 
-            validMoves = gs.getValidMoves(gs.whiteToMove)
+            validMoves = gs.getValidMoves(gs.whiteToMove, False)
             if len(validMoves) > 0:
 
                 start = time.time()
@@ -132,7 +132,7 @@ def main():
                 print(round(gs.evaluation(gs.whiteToMove), 2))
                 moveMade = True
                 if moveMade:
-                    validMoves = gs.getValidMoves(gs.whiteToMove)  # detects checkmate, stalemate
+                    validMoves = gs.getValidMoves(gs.whiteToMove, False)  # detects checkmate, stalemate
                     if gs.checkMate:
                         print("MATE")
                     moveMade = False

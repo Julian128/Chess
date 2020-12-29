@@ -40,7 +40,7 @@ def main():
     screen.fill(pyg.Color("white"))
 
     gs = ChessEngine.GameState()
-    validMoves = gs.getValidMoves(gs.whiteToMove)
+    validMoves = gs.getValidMoves(gs.whiteToMove, False)
     moveMade = False  # flag variable for when a move is made
 
     loadImages()
@@ -70,7 +70,8 @@ def main():
 
                     moveMade = True
                     if moveMade:
-                        validMoves = gs.getValidMoves(gs.whiteToMove)  # detects checkmate, stalemate
+                        print("moveMade")
+                        validMoves = gs.getValidMoves(gs.whiteToMove, False)  # detects checkmate, stalemate
                         if gs.checkMate:
                             print("MATE")
                         moveMade = False
@@ -136,6 +137,7 @@ def main():
                         print(move.getChessNotation())
                         gs.makeMove(move)
                         moveMade = True
+                        print("moveMade")
                         sqSelected = ()
                         playerClicks = []
                     else:  # fixes double click bug
@@ -145,7 +147,7 @@ def main():
     
                             
         if moveMade:
-            validMoves = gs.getValidMoves(gs.whiteToMove)  # detects checkmate, stalemate
+            validMoves = gs.getValidMoves(gs.whiteToMove, False)  # detects checkmate, stalemate
             if gs.checkMate:
                 print("MATE")
             moveMade = False
