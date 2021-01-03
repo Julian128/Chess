@@ -59,18 +59,12 @@ def main():
             if not gs.whiteToMove:
                 if len(validMoves) > 0:
 
-                    start = time.time()
-                    #gs.nodes = 0
-                    move = gs.computerMovePro()
+                    move = gs.computerMoveProoo()
                     print(round(gs.evaluation(gs.whiteToMove), 2))
 
                     print(move.getChessNotation())
-                    done = time.time()
-                    #print("nodes/s: " + str(round((gs.nodes / (done - start)))))
-
                     moveMade = True
                     if moveMade:
-                        print("moveMade")
                         validMoves = gs.getValidMoves(gs.whiteToMove, False)  # detects checkmate, stalemate
                         if gs.checkMate:
                             print("MATE")
@@ -92,7 +86,7 @@ def main():
                     for i in range(0, 100):
                         if len(validMoves) > 0:
 
-                            gs.nodes = 0
+                            #gs.nodes = 0
                             start = time.time()
 
                             if gs.whiteToMove:
@@ -103,7 +97,7 @@ def main():
                             print(move.getChessNotation())
                             done = time.time()
 
-                            print("nodes: " + str(gs.nodes))#str(round((gs.nodes / (done - start)))))
+                            #print("nodes: " + str(gs.nodes))#str(round((gs.nodes / (done - start)))))
 
                             moveMade = True
                             #print(gs.evaluation())
@@ -137,7 +131,6 @@ def main():
                         print(move.getChessNotation())
                         gs.makeMove(move)
                         moveMade = True
-                        print("moveMade")
                         sqSelected = ()
                         playerClicks = []
                     else:  # fixes double click bug

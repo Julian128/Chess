@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>49d84045-1f4e-48ed-9187-c71806adedb8</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>ChessMain.py</StartupFile>
+    <StartupFile>ChessMainOffline.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
