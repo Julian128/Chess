@@ -516,131 +516,42 @@ class GameState():
 
 
 
-    def getEvaluationDeep(self, move): # call with  pool.map(self.getEvaluation, moves) for multithreading
+    def miniMax(self, move): # call with  pool.map(self.miniMax, moves) for multithreading
 
         self.makeMove(move)
-        evals = []
+        eval1 = -1000  # maximizing
         moves = self.getValidMoves(not self.whiteToMove, True)
         if len(moves) > 0:
-            for move in moves:  # maximizing
+            for move in moves:
                 self.makeMove(move)
                 moves2 = self.getValidMoves(self.whiteToMove, True)
 
                 if len(moves2) > 0:
-                    minEval = 1000
+                    eval2 = 1000  # minimizing
 
-                    for move2 in moves2:  # minimizing
+                    for move2 in moves2:  
                         eval = move2.evaluation
-                        if eval < minEval:
-                            minEval = eval
-                    evals2 = minEval
+                        if eval < eval2:
+                            eval2 = eval
 
-
-                else:
-                    evals2 = -1000
-
-                evals.append(evals2)
+                if eval2 > eval1:
+                    eval1 = eval2
                 self.undoMove()
-        else:
-            evals.append(1000)
-
 
 
             self.undoMove()
-            evals.append(evals2)
 
         self.undoMove()
-        #print(np.max(evals))
-        return np.max(evals)
-
-
-
-
-
-
-
-    def computerMovePro(self):  # two moves ahead
-        start = time.time()
-
-        #self.nodes = 0
-        moves1 = self.getValidMoves(self.whiteToMove, True)
-        bestMoves = []
-        pool = Pool(processes = len(moves1), maxtasksperchild = 1000)
-
-        evals = pool.map(self.getEvaluationDeep, moves1)
-        print(evals)
-        pool.terminate()
-                
-        maxs = []
-        if len(evals) > 0:
-            for r in range(0, len(evals)) :
-                if len(evals[r]) > 0:
-                    #print(len(evals[r]))
-                    maxi = max(evals[r])
-                    maxs.append(maxi)
-                elif len(evals[r]) == 0 and True:  #moves1[r].check == True:  # checkmate detection for computer
-                    self.makeMove(moves1[r])
-                    return moves1[r]
-
-            maxs = np.array(maxs)
-            best = np.argwhere(maxs == np.amin(maxs)).flatten()# returnt die indices von den größten elementen return type ndarray
-
-            for i in best:
-                bestMoves.append(moves1[i])
-
-
-        move = random.choice(bestMoves)
-        self.makeMove(move)
-        stop = time.time()
-        #print("nodes/s: ", round(self.nodes / (stop-start), 2))
-        return move
-
-
-
-        if self.whiteToMove:
-
-            mins = []
-            for eval2 in evals :
-                mini = min(eval2)
-                mins.append(mini)
-            best = [i for i, x in enumerate(mins) if x == max(mins)]
-
-            for i in best:
-                bestMoves.append(moves1[i])
-
-
-        else:
-            maxs = []
-            if len(evals) > 0:
-                for eval2 in evals :
-                    if len(eval2) > 0:
-                        maxi = max(eval2)
-                        maxs.append(maxi)
-                    else:
-                        maxs.append(100)
-                best = [i for i, x in enumerate(maxs) if x == min(maxs)]
-
-                for i in best:
-                    bestMoves.append(moves1[i])
-            else:
-                best = [i for i, x in enumerate(evals1) if x == max(evals1)]
-                move = moves1[best]
-
-
-
-        move = random.choice(bestMoves)
-        self.makeMove(move)
-        return move
-
+        return eval1
 
     def computerMoveProoo(self):  # 3 moves ahead
         start = time.time()
 
-        moves1 = self.getValidMoves(self.whiteToMove, True)
+        moves = self.getValidMoves(self.whiteToMove, True)
         bestMoves = []
-        pool = Pool(processes = len(moves1), maxtasksperchild = 1000)
+        pool = Pool(processes = len(moves), maxtasksperchild = 1000)
 
-        evals = pool.map(self.getEvaluationDeep, moves1)
+        evals = pool.map(self.miniMax, moves)
         print(evals)
         pool.terminate()
                 
@@ -649,16 +560,13 @@ class GameState():
         #for i in best:
            # bestMoves.append(moves1[i])
         
-        move = moves1[best]
+        move = moves[best]
         self.makeMove(move)
         stop = time.time()
         #print("nodes/s: ", round(self.nodes / (stop-start), 2))
         #print("nodes: ", self.nodes)
 
         return move
-
-
-       
 
 
     

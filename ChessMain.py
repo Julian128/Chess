@@ -92,7 +92,7 @@ def main():
             validMoves = gs.getValidMoves(gs.whiteToMove, False)
             if len(validMoves) > 0:
 
-                move = gs.computerMovePro()
+                move = gs.computerMoveProoo()
                 print(str(move.getChessNotation()))            
                 client.bots.make_move(game_id, str(move.getChessNotation()))
 
