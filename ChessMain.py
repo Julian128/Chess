@@ -1,10 +1,9 @@
 from multiprocessing import Process, Queue, Pool
-import lichess.api
-from lichess.format import SINGLE_PGN
+
 import time
 import os
 import ChessEngine
-import random
+from ChessEngine import Move
 import berserk
 import threading
 
@@ -33,15 +32,18 @@ class Game(threading.Thread):
 
 
 def main():
+
     #token = "lMysRaNxd9sNQkXj"  rodfish
-    token = "b0X9NKGbCQ3XWpz3"  # coffebot
+    token = "b0X9NKGbCQ3XWpz3"  # coffeebot
     session = berserk.TokenSession(token)
     client = berserk.Client(session)
     #client.account.upgrade_to_bot()
     in_game = False
-    while(not in_game):
+    numberOfMoves = 0    
 
-        time.sleep(0.5)
+    while(not in_game):
+        "Waiting for challenge.."
+        time.sleep(2)
         for event in client.bots.stream_incoming_events():
             if event['type'] == 'gameStart':
                 game_id = event['game']['id']
@@ -54,44 +56,60 @@ def main():
                 in_game = True
     print("The game has started!")
 
+
+
+
     gs = ChessEngine.GameState()
     moveMade = False  # flag variable for when a move is made
-
-
+    numberOfMoves = 1
     while(in_game):
-        movecount = 0
-        state = client.games.export(game_id)
-        move = state["moves"]
+
+        g = Game(client, game_id)
+        moveList = g.current_state["state"]["moves"]
+        
+        moves = moveList.split()
+        print(moves)
+
+        if len(moves) < numberOfMoves or moveList[0] == "":
+            time.sleep(1)
+            continue
+
+        numberOfMoves == len(moveList)
+
+        # print(gs.board)
+
 
         if(gs.whiteToMove):  # importing enemy move
 
-            state = client.games.export(game_id)
-            moves = state["moves"]
 
-            move = moves.split()
-            
-            if len(move) % 2 == 1:
+            if len(moves) % 2 == 1:
+            # if True:
+                moveE = gs.notationTransform(str(moves[-1]), gs.board)  # enemy move
 
-                moveE = gs.notationTransform(move[-1])  # enemy move
+                # moveE = Move(move[-1][:2], move[-1][2:], gs.board)  # enemy move
+
                 print(moveE.getChessNotation())
                 move = gs.makeMove(moveE)
-                movecount += 1
+                print(gs.board)
+                print("white move made")
 
                 moveMade = True
                 if moveMade:
                     validMoves = gs.getValidMoves(gs.whiteToMove, False)  # detects checkmate, stalemate
                     if gs.checkMate:
-                        client.bots.post_message(game_id, "gg")
+                        client.bots.post_message(game_id, "gg Easy")
                         print("MATE")
                     moveMade = False
             else:
                 time.sleep(0.5)
 
-        if(not gs.whiteToMove):  # bot playing a move
+
+        if (not gs.whiteToMove):  # bot playing a move
 
             validMoves = gs.getValidMoves(gs.whiteToMove, False)
             if len(validMoves) > 0:
 
+                # move = gs.computerMoveRandom()
                 move = gs.computerMoveProoo()
                 print(str(move.getChessNotation()))            
                 client.bots.make_move(game_id, str(move.getChessNotation()))
@@ -106,7 +124,7 @@ def main():
                     moveMade = False
 
 
-
+        time.sleep(0.5)
 
 if __name__ == "__main__":
     main()

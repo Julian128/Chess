@@ -1,6 +1,6 @@
 from multiprocessing import Process, Queue, Pool
-import lichess.api
-from lichess.format import SINGLE_PGN
+# import lichess.api
+# from lichess.format import SINGLE_PGN
 import time
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"

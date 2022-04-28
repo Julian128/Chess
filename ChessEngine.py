@@ -1,4 +1,4 @@
-import lichess.api
+# import lichess.api
 import numpy as np
 import random
 import time
@@ -404,7 +404,7 @@ class GameState():
             [5, 5, 5, 5, 5, 5, 5, 5],
             [5, 5, 5, 5, 5, 5, 5, 5],
             [5, 5, 5, 5, 5, 5, 5, 5],
-            [5, 5, 5, 5, 5, 5, 5, 5]
+            [4.5, 5, 5, 5, 5, 5, 5, 4.5]
             ]
         queenValue = [
             [7.5, 8, 8, 8, 8, 8, 8, 7.5],
@@ -432,11 +432,9 @@ class GameState():
 
         eval = 0
         correction = 0
-        rowN = 0
-        for row in self.board:
+        for rowN, row in enumerate(self.board):
 
-            pieceN = 0
-            for piece in row:
+            for pieceN, piece in enumerate(row):
                 if piece[0] == "w":
                     eval += piecesToValues[piece[1]][rowN][pieceN]
                     #eval += piecesToValuess[piece[1]]
@@ -445,10 +443,6 @@ class GameState():
                 elif piece[0] == "b":
                     eval -= piecesToValues[piece[1]][7 - rowN][7 - pieceN]
                     #eval -= piecesToValuess[piece[1]]
-
-                pieceN += 1
-
-            rowN += 1
 
         if self.inCheck(self.whiteToMove):
             correction += 2
@@ -464,26 +458,27 @@ class GameState():
         return eval
 
 
-
+    # engine makes a random move list out of all valid moves
     def computerMoveRandom(self):
 
-        moves = self.getValidMoves()
+        moves = self.getValidMoves(not self.whiteToMove, True)
 
         move = random.choice(moves)
         self.makeMove(move)
 
         return move
 
+    # engine calculates the best possible board one move ahead
     def computerMove(self):  # one move ahead
 
         evals = []
-        moves = self.getValidMoves()
+        moves = self.getValidMoves(not self.whiteToMove, True)
         bestMoves = []
 
         for move in moves:
 
             self.makeMove(move)
-            self.getValidMoves()  # detect mate
+            self.getValidMoves(not self.whiteToMove, True)  # detect mate
             evals.append(self.evaluation(not self.whiteToMove))  # after one move
         
             self.undoMove()
@@ -552,11 +547,12 @@ class GameState():
         pool = Pool(processes = len(moves), maxtasksperchild = 1000)
 
         evals = pool.map(self.miniMax, moves)
-        print(evals)
+        evals += np.random.random(len(evals))*0.2  # non deterministic engine
+        # print(evals)
         pool.terminate()
                 
         best = np.argmin(evals)
-        print(best)
+        # print(best)
         #for i in best:
            # bestMoves.append(moves1[i])
         
@@ -570,65 +566,89 @@ class GameState():
 
 
     
-    def notationTransform(self, moveIn):
-        moves = self.getValidMoves(self.whiteToMove, False)
-        possibleMoves = []
-        finalMoves = []
-        ranksToRows = {"1": 7, "2": 6, "3": 5, "4": 4, "5": 3, "6": 2, "7": 1, "8": 0}
-        rowsToRanks = {i: j for j, i in ranksToRows.items()}
+    def notationTransform(self, moveIn, board=None):
 
-        filesToCols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
-        colsToFiles = {i: j for j, i in filesToCols.items()}
+        if True:  # easy notation already given
 
-        if moveIn == "O-O":
-            return Move([7, 4], [7, 6], self.board)
-        elif moveIn == "O-O-O":
-            return Move([7, 4], [7, 2], self.board)
+            moves = self.getValidMoves(self.whiteToMove, False)
 
-        moveIn = moveIn.replace("x", "")
-        moveIn = moveIn.replace("+", "")
-        moveIn = moveIn.replace("#", "")
+            if moveIn == "O-O":
+                return Move([7, 4], [7, 6], board)
+            elif moveIn == "O-O-O":
+                return Move([7, 4], [7, 2], board)
+
+            filesToCols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
+            colsToFiles = {i: j for j, i in filesToCols.items()}
+        
+            startSq = [8-int(moveIn[1]), filesToCols[moveIn[0]]]
+            endSq = [8-int(moveIn[3]), filesToCols[moveIn[2]]]
+            return Move(startSq, endSq, self.board)
+
+        else:
+
+            moves = self.getValidMoves(self.whiteToMove, False)
+            possibleMoves = []
+            finalMoves = []
+            ranksToRows = {"1": 7, "2": 6, "3": 5, "4": 4, "5": 3, "6": 2, "7": 1, "8": 0}
+            rowsToRanks = {i: j for j, i in ranksToRows.items()}
+
+            filesToCols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
+            colsToFiles = {i: j for j, i in filesToCols.items()}
+
+            if moveIn == "O-O":
+                return Move([7, 4], [7, 6], self.board)
+            elif moveIn == "O-O-O":
+                return Move([7, 4], [7, 2], self.board)
+
+            moveIn = moveIn.replace("x", "")
+
+            moveIn = moveIn.replace("+", "")
+            moveIn = moveIn.replace("#", "")
+
+            pieceMoved = moveIn[0]
+            moveIn = moveIn[:-2] + str(ranksToRows[moveIn[-1]]) + str(filesToCols[moveIn[-2]])
 
 
-        pieceMoved = moveIn[0]
-        moveIn = moveIn[:-2] + str(ranksToRows[moveIn[-1]]) + str(filesToCols[moveIn[-2]])
+
+            list = ["a", "b", "c", "d", "e", "f", "g", "h"]
+            for c in list:
+                if moveIn[0] == c:
+                    moveIn = "P" + moveIn
 
 
+            for move in moves:
 
-        list = ["a", "b", "c", "d", "e", "f", "g", "h"]
-        for c in list:
-            if moveIn[0] == c:
+                if str(move.endRow) == moveIn[-2] and str(move.endCol) == moveIn[-1]:
+                    possibleMoves.append(move)
+
+            if len(moveIn) == 2:
                 moveIn = "P" + moveIn
 
+            print(f"{possibleMoves=}")
+            for move in possibleMoves:
+                if moveIn[0] == move.pieceMoved[1]:
+                    finalMoves.append(move)
 
-        for move in moves:
+            print(f"{finalMoves=}")
 
-            if str(move.endRow) == moveIn[-2] and str(move.endCol) == moveIn[-1]:
-                possibleMoves.append(move)
+            if len(finalMoves) > 1:
+                print("multiple moves available")
+                for move in finalMoves:
+                
 
-        if len(moveIn) == 2:
-            moveIn = "P" + moveIn
-
-        #print(moveIn)
-        for move in possibleMoves:
-            if moveIn[0] == move.pieceMoved[1]:
-                finalMoves.append(move)
-
-
-        if len(finalMoves) > 1:
-            print("multiple moves available")
-            for move in finalMoves:
-             
-
-                if moveIn[1] != colsToFiles[move.startCol] and moveIn[1] != rowsToRanks[move.startRow]:
-                    finalMoves.remove(move)
-                    print("removed: " + move.getChessNotation())
-        if len(finalMoves) > 1:
-            print("error")
-        return(finalMoves[0])
+                    if moveIn[1] != colsToFiles[move.startCol] and moveIn[1] != rowsToRanks[move.startRow]:
+                        finalMoves.remove(move)
+                        print("removed: " + move.getChessNotation())
+            if len(finalMoves) > 1:
+                print("error")
+            return(finalMoves[0])
 
 
+    # def getBoardState(moveList):
 
+    #     newBoard = GameState()
+    #     newBoard.
+    #     ()
 
 
 
