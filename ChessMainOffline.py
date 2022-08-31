@@ -1,12 +1,15 @@
-from multiprocessing import Process, Queue, Pool
-# import lichess.api
-# from lichess.format import SINGLE_PGN
+"""
+Allows to play offline against the chess engine with a GUI.
+"""
+
 import time
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame as pyg
-import ChessEngine
-import random
+from src.GameState import GameState
+from src.Move import Move
+from src.ChessEngine import ChessEngine
+
 
 
 
@@ -14,32 +17,18 @@ width = height = 1024
 dimensions = 8
 sq_size = height / dimensions
 maxFPS = 60
-images = {}  # initializes a set, an unordered collection with no dupilcate elements
+images = {}  # initializes a set of images
 
-
-#Initialize global dict of images, called once
-
-def loadImages():
-    pieces = ["wP", "wR", "wN", "wB", "wQ", "wK", "bP", "bR", "bN", "bB", "bQ", "bK"]
-    for piece in pieces:
-        images[piece] = pyg.transform.scale(pyg.image.load("images/" + piece + ".png"), (int(sq_size), int(sq_size)))
 
 
 def main():
-
-    #user = lichess.api.user('Julik137')
-    #print(user['perfs']['blitz']['rating'])
-    #pgn = lichess.api.user_games('Julik137', max=1, format=SINGLE_PGN)
-    #pgn = lichess.api.game('Qa7FJNk2', format=PGN)
-    #print(pgn)
-
 
     pyg.init()
     screen = pyg.display.set_mode((width, height))
     clock = pyg.time.Clock()
     screen.fill(pyg.Color("white"))
 
-    gs = ChessEngine.GameState()
+    gs = GameState()
     validMoves = gs.getValidMoves(gs.whiteToMove, False)
     moveMade = False  # flag variable for when a move is made
 
@@ -55,12 +44,12 @@ def main():
             if i.type == pyg.QUIT:  # keyboard clicks
                 running = False
 
-            #play against engine
+            #play against ChessEngine
             if not gs.whiteToMove:
                 if len(validMoves) > 0:
 
-                    move = gs.computerMoveProoo()
-                    print(round(gs.evaluation(gs.whiteToMove), 2))
+                    move = ChessEngine.computerMoveProoo(gs)
+                    print(round(ChessEngine.evaluation(gs, gs.whiteToMove), 2))
 
                     print(move.getChessNotation())
                     moveMade = True
@@ -90,9 +79,9 @@ def main():
                             start = time.time()
 
                             if gs.whiteToMove:
-                                move = gs.computerMovePro()
+                                move = ChessEngine.computerMovePro(gs)
                             else:
-                                move = gs.computerMove()
+                                move = ChessEngine.computerMove(gs)
 
                             print(move.getChessNotation())
                             done = time.time()
@@ -124,7 +113,7 @@ def main():
                     playerClicks.append(sqSelected)
 
                 if len(playerClicks) == 2:
-                    move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
+                    move = Move(playerClicks[0], playerClicks[1], gs.board)
 
                     if move in validMoves:
 
@@ -151,6 +140,11 @@ def main():
         clock.tick(maxFPS)
         pyg.display.flip()
 
+
+def loadImages():
+    pieces = ["wP", "wR", "wN", "wB", "wQ", "wK", "bP", "bR", "bN", "bB", "bQ", "bK"]
+    for piece in pieces:
+        images[piece] = pyg.transform.scale(pyg.image.load("images/" + piece + ".png"), (int(sq_size), int(sq_size)))
 
 
 def drawGameState(screen, gs):

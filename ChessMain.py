@@ -1,9 +1,11 @@
-from multiprocessing import Process, Queue, Pool
+"""
+Interacts through berserk with the lichess API to play online against any Lichess player upon invitation.
+"""
+
 
 import time
-import os
-import ChessEngine
-from ChessEngine import Move
+import src.GameState as GameState
+from src.GameState import Move
 import berserk
 import threading
 
@@ -59,14 +61,14 @@ def main():
 
 
 
-    gs = ChessEngine.GameState()
+    gs = GameState.GameState()
     moveMade = False  # flag variable for when a move is made
     numberOfMoves = 1
-    while(in_game):
+    while in_game:
 
         g = Game(client, game_id)
         moveList = g.current_state["state"]["moves"]
-        
+
         moves = moveList.split()
         print(moves)
 
@@ -79,7 +81,7 @@ def main():
         # print(gs.board)
 
 
-        if(gs.whiteToMove):  # importing enemy move
+        if gs.whiteToMove:  # importing enemy move
 
 
             if len(moves) % 2 == 1:
@@ -93,8 +95,7 @@ def main():
                 print(gs.board)
                 print("white move made")
 
-                moveMade = True
-                if moveMade:
+                if moveMade := True:
                     validMoves = gs.getValidMoves(gs.whiteToMove, False)  # detects checkmate, stalemate
                     if gs.checkMate:
                         client.bots.post_message(game_id, "gg Easy")
@@ -111,12 +112,11 @@ def main():
 
                 # move = gs.computerMoveRandom()
                 move = gs.computerMoveProoo()
-                print(str(move.getChessNotation()))            
+                print(str(move.getChessNotation()))
                 client.bots.make_move(game_id, str(move.getChessNotation()))
 
                 print("evaluation: ", round(gs.evaluation(gs.whiteToMove), 2))
-                moveMade = True
-                if moveMade:
+                if moveMade := True:
                     validMoves = gs.getValidMoves(gs.whiteToMove, False)  # detects checkmate, stalemate
                     if gs.checkMate:
                         client.bots.post_message(game_id, "gg")
